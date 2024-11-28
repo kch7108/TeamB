@@ -1,0 +1,657 @@
+package org;
+
+import java.util.*; 
+import java.io.*;
+
+class Card {
+    Scanner scan = new Scanner(System.in);
+
+    ArrayList<String> user_deck = new ArrayList<String>(); //Special 카드용.
+    ArrayList<String> PC_deck = new ArrayList<String>();
+    //처음 얻는 두 카드만을 출력하기위한 카드덱, game_first에서만 사용할 예정.
+    ArrayList<String> PC_deck_DP = new ArrayList<String>();
+    
+    //카드를 뻇어올 떄, deck에서 카드의 문자형을 뺏고, 여기에서 그 카드에 해당하는 값 뺸다.
+    ArrayList<Integer> user = new ArrayList<Integer>();
+    ArrayList<Integer> PC = new ArrayList<Integer>();
+
+    //생명.
+    int user_score = 100;
+    int PC_score = 100;
+    //게임 내 점수합.
+    int user_sum = 0;
+    int PC_sum = 0;
+
+    int round = 1;
+    
+    int user_turn = 0;
+    int PC_turn = 0;
+    
+    int bet = 0;
+    //화면에 대사를 출력하기 위함.
+    String message = "";
+
+    ArrayList<String> cards = new ArrayList<>();
+    Random random = new Random();
+
+    //N값을 70-100사이 설정.
+    int N_goal = random.nextInt(100 - 20 + 1) + 20;
+
+    public Card() {
+        String[] cardArray = {
+            "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", 
+            "2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", 
+            "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", 
+            "2H", "3H", "4H", "5H", "6H", "7H", "8H", "9H", 
+            "J", "Q", "K", "A", "J", "Q", "K", "A", "J", "Q", "K", "A", "J", "Q", "K", "A"
+        };
+        
+        cards.addAll(Arrays.asList(cardArray));
+    }
+    
+    //이클립스 내에서 터미널 내용을 지우기 위해서는 별도 플러그인 설치가 필요해, 가장 단순한 해결법 사용. 
+    //대신 출력 내용이 많아지기 때문에 성능저하 발생 가능.
+    public void clear() {
+        for (int i = 0; i < 50; i++) { // 50줄을 출력하여 화면 밀기
+            System.out.println();
+        }
+    }
+    
+    public void nar() {
+    	System.out.println("=================================================================");
+    	System.out.println("                              N                              ");
+    	System.out.println("=================================================================");
+    	try {
+            Thread.sleep(2000); // 1.5초 지연
+        } catch (InterruptedException e) {
+        }
+    	System.out.println("매 라운드마다 베팅할 수 있는 점수 100점, 각기 다른 목표 점수, N이 주어집니다.");
+    	System.out.println("카드는 1-9까지 카드, 10을 나타내는 J, D, K, 1 또는 11을 나타내는 A \n'뺏기', '랜덤바꾸기', '모두바꾸기' 이 세 가지 스페셜카드가 있습니다. ");
+    	System.out.println("매 라운드 승자는 N을 먼저 넘은 플레이어가 승리합니다. ");
+    	try {
+            Thread.sleep(5000); // 1.5초 지연
+        } catch (InterruptedException e) {;
+        }
+    	System.out.println("=================================================================");
+    	System.out.println("그럼 지금부터 게임을 시작하겠습니다! ");
+    	try {
+            Thread.sleep(2000); // 1.5초 지연
+        } catch (InterruptedException e) {;
+        }
+    	
+    }
+
+    public void Dis(String _Card_PC, String _Card_user) {
+    	
+    	clear();
+
+        System.out.println("=================================================================");
+        System.out.printf("라운드%d	N(목표 점수):%d	베팅된 점수:%d\n", round, N_goal, bet * 2);
+        System.out.println("=================================================================");
+
+        System.out.println("PC 보유 점수: " + PC_score);
+        System.out.println("카드: " + PC_deck_DP); 
+        System.out.printf("카드점수 합계: %d\n", PC_sum);
+
+//        if (!_Card_PC.isEmpty()) {
+//            System.out.printf("방금 뽑은 카드: %s\n", _Card_PC);
+//        }
+
+        System.out.println("-----------------------------------------------------------------");
+
+        System.out.println("유저 보유 점수:" + user_score);
+        System.out.println("카드: " + user_deck);
+        System.out.printf("카드점수 합계: %d\n", user_sum);
+
+        if (!_Card_user.isEmpty()) {
+            System.out.printf("방금 뽑은 카드: %s\n", _Card_user);
+        }
+
+        System.out.println("=================================================================");
+        try {
+            Thread.sleep(1000); // 1.5초 지연
+        } catch (InterruptedException e) {
+        }
+        System.out.printf("%s\n", message);
+        System.out.println();
+        
+        try {
+            Thread.sleep(1500); // 1.5초 지연
+        } catch (InterruptedException e) {
+        }
+
+        if (bet == 0) { // 베팅 단계에서만 실행
+            System.out.printf("%d점 중 몇 점을 베팅하시겠습니까(숫자만 입력하시오.): ", user_score);
+            bet = scan.nextInt();
+            scan.nextLine(); // 버퍼 비우기
+            
+            try {
+                Thread.sleep(1500); // 1.5초 지연
+            } catch (InterruptedException e) {
+            	System.out.println("Thread.sleep 오류 발생");
+            }
+            
+            System.out.printf("총 %d점 베팅하셨습니다.\n", bet);
+            user_score -= bet;
+
+            try {
+                if (bet == 100) {
+                    System.out.print("\nPC: 그렇게 나오신다 이거지?\n");
+                    Thread.sleep(1500); // 1.5초 지연
+                    System.out.print("PC: 그럼 나도 올인!!\n");
+                } else {
+                    System.out.println("PC: 그럼 나도 똑같이 베팅하지!");
+                }
+            } catch (InterruptedException e) {
+                System.out.println("Thread.sleep 오류 발생");
+            }
+            
+            PC_score -= bet;
+            try {
+                Thread.sleep(1500); // 1.5초 지연
+            } catch (InterruptedException e) {
+            }
+        }
+    }
+
+    public String drawCard() {
+        if (cards.isEmpty()) {
+            message = ("카드가 모두 소진되었습니다. 게임을 종료합니다.");
+            Dis("", "");
+            System.exit(0);
+        }
+
+        int index = random.nextInt(cards.size());
+        return cards.remove(index);
+    }
+    
+    //랭킹시스템을 위해 유저의 게임플레이 결과를 전달.
+    public int gameResult() {
+    	return user_score;
+    }
+    //카드 값.
+    public int getCardValue(String card) {
+        String numberPart = card.substring(0, card.length() - 1);
+        return Integer.parseInt(numberPart);
+    }
+    // 처음에는 카드 두 장을 주고 시작하기 때문에 별도 작성.
+    public void gamePlay_first() { //여기 이제 건들지 말것!
+        while (true) {
+        	if(round == 1) {
+        		nar();
+        	}
+            Dis("", "");
+            	
+                for (int i = 0; i < 2; i++) {
+                    String drawnCard_user = drawCard();
+                    String drawnCard_PC = drawCard();
+
+                    if (drawnCard_user.equals("A")) {
+                    	user_deck.add(drawnCard_user);
+                        message = ("A가 나왔습니다. 1 또는 11 중 선택하세요: ");
+                        Dis("", drawnCard_user);
+                        int choice = scan.nextInt();
+                        scan.nextLine();
+                        user.add(choice);
+                        user_sum += choice;
+                        message ="A가 나와 " + choice + "를 선택했습니다.";
+                        Dis(drawnCard_PC, drawnCard_user);
+                        user_turn++;
+                    } 
+                    
+                    else if (drawnCard_user.equals("J") || drawnCard_user.equals("Q") || drawnCard_user.equals("K")) {
+                    	if (drawnCard_user.equals("J")) {
+                    		message = "J가 나왔습니다.";
+                    	}
+                    	else if(drawnCard_user.equals("Q")) {
+                    		message = "Q가 나왔습니다.";
+                    	}
+                    	else if(drawnCard_user.equals("K")) {
+                    		message = "K가 나왔습니다.";
+                    	}
+                    	user_deck.add(drawnCard_user);
+                    	user.add(10);
+                        user_sum += 10;
+                        Dis("", drawnCard_user);
+                        user_turn++;
+                    } 
+                    
+                    else {
+                    	message = drawnCard_user + "가 나왔습니다.";
+                    	user_deck.add(drawnCard_user);
+                        user.add(getCardValue(drawnCard_user));
+                        user_sum += user.get(user_turn);
+                        Dis(drawnCard_PC, drawnCard_user);
+                        user_turn++;
+                    }
+
+                    if (drawnCard_PC.equals("A")) {
+                    	PC_deck_DP.add(drawnCard_PC);
+                    	PC_deck.add(drawnCard_PC);
+                        PC.add(PC_sum + 11 > N_goal ? 1 : 11);
+                        PC_sum += PC.get(PC_turn);
+                        Dis(drawnCard_PC, drawnCard_user);
+                        PC_turn++;
+                    } 
+                    
+                    else if (drawnCard_PC.equals("J") || drawnCard_PC.equals("Q") || drawnCard_PC.equals("K")) {
+                    	PC_deck_DP.add(drawnCard_PC);
+                    	PC_deck.add(drawnCard_PC);
+                    	PC.add(10);
+                        PC_sum += 10;
+                        Dis(drawnCard_PC, drawnCard_user);
+                        PC_turn++;
+                    } 
+                    
+                    else {
+                    	PC_deck_DP.add(drawnCard_PC);
+                    	PC_deck.add(drawnCard_PC);
+                    	PC.add(getCardValue(drawnCard_PC));
+                        PC_sum += PC.get(PC_turn);
+                        Dis(drawnCard_PC, drawnCard_user);
+                        PC_turn++;
+                    }
+                }
+                break;
+            }
+        //본게임으로 이동.
+        gamePlay_Main();
+    }
+    //본게임 진행시 스페셜카드 추가.
+    public void gamePlay_Main() {
+
+    	cards.add("randomChanging_Card");
+    	cards.add("randomChanging_Card");
+    	cards.add("randomChanging_Card");
+    	cards.add("robbing_Card");
+    	cards.add("robbing_Card");
+    	cards.add("changing_All_Card");
+
+        while (true) {
+            System.out.print("카드를 뽑으시겠습니까? (Y/N): ");
+            String user_ans = scan.nextLine().trim();
+            if (user_ans.equalsIgnoreCase("N")) {
+                System.out.println("네, 알겠습니다.");
+                break;
+            } 
+            else if (user_ans.equalsIgnoreCase("Y")) {
+                String drawnCard_user = drawCard();
+                String drawnCard_PC = drawCard();
+
+                //객체를 만들어서 유저의 기호에 맞게 사용하도록 할려 했으나, 유저흥미측면에서 즉시사용이 나을 것 같아 변경.
+                if (drawnCard_user.contains("_Card")) { 
+                	user_deck.add(drawnCard_user);
+                	//랜덤으로 수를 정해, 배열에서 수에 알맞은 칸을 바꾼다.
+                	if( drawnCard_user.contains("randomChanging")){
+                		int user_randomChanging = random.nextInt(user_deck.size());
+                		int PC_randomChanging = random.nextInt(PC_deck.size());
+                		
+                		message = "유저카드" + user_deck.get(user_randomChanging) + "와 PC카드" + PC_deck.get(PC_randomChanging) + "을 교환합니다.";
+                		
+                		//바꾸기 전 기존 카드합에서 차감.
+                		user_sum -= user.get(user_randomChanging);
+                		PC_sum -= PC.get(PC_randomChanging);
+                		
+                		user_sum += PC.get(PC_randomChanging);
+                		PC_sum = user.get(user_randomChanging);
+                		
+                		String re1 = PC_deck.get(PC_randomChanging);
+                		int re2 = PC.get(PC_randomChanging);
+                		
+                		PC_deck.remove(PC_deck.get(PC_randomChanging));
+                		PC.remove(PC.get(PC_randomChanging));
+                		
+                		PC_deck.add(user_deck.get(user_randomChanging));
+                		PC.add(user.get(user_randomChanging));
+                		
+                		user_deck.remove(user_deck.get(user_randomChanging));
+                		user.remove(user.get(user_randomChanging));
+                		
+                		user_deck.add(re1);
+                		user.add(re2);
+                		
+                		Dis(drawnCard_PC, drawnCard_user);
+                	}
+
+                	else if( drawnCard_user.contains("robbing")){
+                		message = ("상대방의 카드를 뺏습니다.");
+                		//카드를 뺏어오기.
+                		int randomIndex = random.nextInt(PC_deck.size());
+                		String user_robbedCard = PC_deck.get(randomIndex);
+                		
+                		//카드를 뺏어오는 과정.
+                		user.add(PC.get(randomIndex));
+                		PC_sum -= PC.get(randomIndex);
+                		PC_deck.remove(PC_deck.get(randomIndex));
+                		
+        	            user_deck.add(user_robbedCard);
+        	            user_sum += user.get(user.size()-1);
+        	            
+        	            message = (user_robbedCard + "카드를 상대방에게서 빼앗았습니다.");
+        	            
+        	            Dis(drawnCard_PC, drawnCard_user);
+                	}
+                	
+                	else if(drawnCard_user.contains("changing_All")) {
+
+                	    // PC_deck과 PC 데이터를 임시 저장
+                	    ArrayList<String> temp_deck = new ArrayList<>(PC_deck);
+                	    ArrayList<Integer> temp = new ArrayList<>(PC);
+                	    
+                	    int a = 0;
+                	    
+                	    //값 바꿔주기.
+                	    a = PC_sum;
+                	    PC_sum = user_sum;
+                	    user_sum = PC_sum;
+
+                	    PC_deck.clear();
+                	    PC.clear();
+
+                	    PC_deck.addAll(user_deck);
+                	    PC.addAll(user);
+
+                	    user_deck.clear();
+                	    user.clear();
+
+                	    user_deck.addAll(temp_deck);
+                	    user.addAll(temp);
+                	    
+                	    message += "카드 다 바꿔~";
+                	    Dis(drawnCard_PC, drawnCard_user);
+                	}
+
+                }
+
+                
+
+                else if (drawnCard_user.equals("A")) {
+                	user_deck.add(drawnCard_user);
+                    System.out.print("A가 나왔습니다. 1 또는 11 중 선택하세요: ");
+                    int choice = scan.nextInt();
+                    scan.nextLine();
+                    user.add(choice);
+                    user_sum += choice;
+                    user_turn++;
+                    message ="A가 나와 " + choice + "를 선택했습니다.";
+                    Dis(drawnCard_PC, drawnCard_user);
+                } 
+                else if (drawnCard_user.equals("J") || drawnCard_user.equals("Q") || drawnCard_user.equals("K")) {
+                	user_deck.add(drawnCard_user);
+                	if (drawnCard_user.equals("J")) {
+                		message = "J가 나왔습니다.";
+                	}
+                	else if(drawnCard_user.equals("Q")) {
+                		message = "Q가 나왔습니다.";
+                	}
+                	else if(drawnCard_user.equals("K")) {
+                		message = "K가 나왔습니다.";
+                	}
+                    user.add(10);
+                    user_sum += 10;
+                    user_turn++;
+                    Dis(drawnCard_PC, drawnCard_user);
+                } 
+                else {
+                	user_deck.add(drawnCard_user);
+                	message = drawnCard_user + "가 나왔습니다.";
+                    user.add(getCardValue(drawnCard_user));
+                    user_turn++;
+                    Dis(drawnCard_PC, drawnCard_user);
+                }
+                
+                //PC 게임진행 부분.
+                if (drawnCard_PC.contains("_Card")) {
+                	System.out.print(drawnCard_PC);
+                	PC_deck.add(drawnCard_PC);
+                	if( drawnCard_PC.contains("randomChanging")){
+                		int user_randomChanging = random.nextInt(user_deck.size()) - 1;
+                		if(user_randomChanging == 0) {
+                			user_randomChanging += 1;
+                		}
+                		int PC_randomChanging = random.nextInt(PC_deck.size()) - 1;
+                		if(PC_randomChanging == 0) {
+                			PC_randomChanging += 1;
+                		}
+                		
+                		message = "유저카드" + user_deck.get(user_randomChanging) + "와 PC카드" + PC_deck.get(PC_randomChanging) + "을 교환합니다.";
+                		
+                		//바꾸기 전 기존 카드합에서 차감.
+                		user_sum -= user.get(user_randomChanging);
+                		PC_sum -= PC.get(PC_randomChanging);
+                		
+                		user_sum += PC.get(PC_randomChanging);
+                		PC_sum = user.get(user_randomChanging);
+                		
+                		String re1 = user_deck.get(user_randomChanging);
+                		int re2 = user.get(user_randomChanging);
+                		
+                		PC_deck.remove(PC_deck.get(PC_randomChanging));
+                		PC.remove(PC.get(PC_randomChanging));
+                		
+                		PC_deck.add(user_deck.get(user_randomChanging));
+                		PC.add(user.get(user_randomChanging));
+                		
+                		user_deck.remove(user_deck.get(user_randomChanging));
+                		user.remove(user.get(user_randomChanging));
+                		
+                		PC_deck.add(re1);
+                		PC.add(re2);
+                		
+                		Dis(drawnCard_PC, drawnCard_user);
+                	}
+
+                	else if( drawnCard_PC.contains("robbing")){
+                		//카드를 뺏어오기.
+                		int randomIndex = random.nextInt(user_deck.size());
+                		String PC_robbedCard = user_deck.get(randomIndex);
+                		
+                		//카드를 뺏어오는 과정.
+                		PC.add(user.get(randomIndex));
+                		user_sum -= user.get(randomIndex);
+                		user_deck.remove(user_deck.get(randomIndex));
+                		
+        	            PC_deck.add(PC_robbedCard);
+        	            PC_sum += PC.get(PC.size()-1);
+
+        	            message = (PC_robbedCard + "카드를 상대방에게 빼앗겼습니다.  PC:너 카드 잘~ 가져간다!!");
+        	            
+        	            Dis(drawnCard_PC, drawnCard_user);
+                	}
+                	
+                	else if(drawnCard_PC.contains("changing_All")) {
+
+                	    // PC_deck과 PC 데이터를 임시 저장
+                	    ArrayList<String> temp_deck = new ArrayList<>(PC_deck);
+                	    ArrayList<Integer> temp = new ArrayList<>(PC);
+
+                	    int a = 0;
+                	    
+                	    //값 바꿔주기.
+                	    a = PC_sum;
+                	    PC_sum = user_sum;
+                	    user_sum = PC_sum;
+
+                	    PC_deck.clear();
+                	    PC.clear();
+
+                	    PC_deck.addAll(user_deck);
+                	    PC.addAll(user);
+
+                	    user_deck.clear();
+                	    user.clear();
+
+                	    user_deck.addAll(temp_deck);
+                	    user.addAll(temp);
+                	    
+                	    message += "카드 다 바꿔~";
+                	    
+                	    Dis(drawnCard_PC, drawnCard_user);
+                	}
+                	
+                } 
+                else if (drawnCard_PC.equals("A")) {
+                	PC_deck.add(drawnCard_PC);
+                    PC.add(PC_sum + 11 > N_goal ? 1 : 11);
+                    PC_sum += PC.get(PC_turn);
+                    PC_turn++;
+                    message += "  PC:하하! 대박이네!";
+                    Dis(drawnCard_PC, drawnCard_user);
+                } 
+                else if (drawnCard_PC.equals("J") || drawnCard_PC.equals("Q") || drawnCard_PC.equals("K")) {
+                	PC_deck.add(drawnCard_PC);
+                    PC.add(10);
+                    PC_sum += 10;
+                    PC_turn++;
+                    message += "  PC:아싸~ 내 카드 잘 나왔다~!";
+                    Dis(drawnCard_PC, drawnCard_user);
+                } 
+                else {
+                	PC_deck.add(drawnCard_PC);
+                    PC.add(getCardValue(drawnCard_PC));
+                    PC_sum += PC.get(PC_turn);
+                    PC_turn++;
+                    message += "  PC:아..조금 아쉬운데~";
+                    Dis(drawnCard_PC, drawnCard_user);
+                }
+            }
+
+            //유저와 피씨 중에서 둘 중 하나가 먼저 N_goal을 넘어섰을 때 대비.
+            if (user_sum >= N_goal) {
+                message = "user가 승리했습니다!";
+                user_score += bet * 2;
+                Dis("", "");
+                System.out.print("다음 라운드를 진행하시겠습니까? (Y/N):");
+                String ans = scan.nextLine().trim();
+                if (ans.equalsIgnoreCase("N")) {
+                   	System.out.print("네, 알겠습니다. 게임을 종료합니다.\n");
+                   	break;
+                } 
+                else if (ans.equalsIgnoreCase("Y")) {
+                	message = "네, 알겠습니다. 다음 라운드를 진행합니다.\n";
+                	Dis("", "");
+                	gameReset();
+                }
+            } 
+            else if (PC_sum >= N_goal) {
+            	message = "PC가 승리했습니다!";
+            	PC_score += bet * 2;
+            	Dis("", "");
+                System.out.print("다음 라운드를 진행하시겠습니까? (Y/N):");
+                String ans = scan.nextLine().trim();
+                if (ans.equalsIgnoreCase("N")) {
+                    System.out.print ("네, 알겠습니다. 게임을 종료합니다.\n");
+                    break;
+                } 
+                else if (ans.equalsIgnoreCase("Y")) {
+                	message = "네, 알겠습니다. 다음 라운드를 진행합니다.\n";
+                	Dis("", "");
+                	gameReset();
+                }
+            }
+        }
+    }
+    
+    public void gameReset() {
+    	
+    	//덱에 스페셜카드가 존재할 경우를 배제하기 위해 존재.
+    	for(int i = 0; i < user_deck.size(); i++) {
+    		if(user_deck.get(i).contains("_Card")) {
+    			
+    		}
+    		else cards.add(user_deck.get(i));
+    	}
+    	
+    	for(int i = 0; i < PC_deck.size(); i++) {
+    		if(PC_deck.get(i).contains("_Card")) {
+    			
+    		}
+    		else cards.add(PC_deck.get(i));
+    	}
+    	
+    	user_deck.clear(); // 기존의 요소들을 제거하고 크기를 0으로 초기화
+    	PC_deck.clear();
+    	PC_deck_DP.clear();
+    	user.clear();
+        PC.clear();
+        cards.clear();
+        
+        message = "라운드" + round +" 시작합니다.";
+         
+    	user_score += 100;
+        PC_score += 100;
+        
+        user_sum = 0;
+        PC_sum = 0;
+        
+        round +=1;
+        
+        bet = 0;
+        
+        gamePlay_first();
+    }
+}
+
+public class game_main {
+    public static void main(String[] args) throws IOException {
+    	Scanner scan = new Scanner( System.in );
+    	ArrayList<String[]> list = new ArrayList<String[]>();// 먼저 기존 게임랭킹 파일 읽기
+    	// 파일 열기(읽기모드)
+    	// 기존 랭킹 파일 읽기
+    	String filename = "파일주소입력"; 
+        File file = new File(filename);
+
+        // 파일이 없으면 새로 생성
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        
+        BufferedReader inRankingFile = new BufferedReader(new FileReader(new File(filename)));
+
+        for (String line; (line = inRankingFile.readLine()) != null; ) {
+            String[] one = line.split("\t");
+            if (one.length < 2) {
+                System.out.println("[오류] 게임랭킹 내용을 읽어올 수 없습니다.");
+                break;
+            }
+            list.add(new String[]{one[0], one[1]});
+        }
+        inRankingFile.close();
+
+        // 새 게임 아이디 입력 받기
+        System.out.print("게임 아이디를 입력하세요: ");
+        String id = scan.next();
+    	//게임 플레이.
+        Card cardGame = new Card();
+        cardGame.gamePlay_first();
+        int gameScore = cardGame.gameResult();
+        
+     // 랭킹에 점수 반영
+        boolean idExists = false;
+        for (String[] check : list) {
+            if (check[0].equals(id)) {
+                int currentScore = Integer.parseInt(check[1]);
+                check[1] = String.valueOf(currentScore + gameScore);
+                idExists = true;
+                break;
+            }
+        }
+
+        if (!idExists) {
+            list.add(new String[]{id, String.valueOf(gameScore)});
+        }
+
+        // 점수로 정렬
+        list.sort((o1, o2) -> Integer.parseInt(o2[1]) - Integer.parseInt(o1[1]));
+
+        // 랭킹 파일 업데이트
+        BufferedWriter outRankingFile = new BufferedWriter(new FileWriter(new File(filename)));
+        for (int index = 0; index < list.size(); index++) {
+            outRankingFile.write(list.get(index)[0] + "\t" + list.get(index)[1] + "\n");
+            System.out.println(index + 1 + ") " + list.get(index)[0] + "\t" + list.get(index)[1]);
+        }
+        outRankingFile.close();
+
+        scan.close();
+    }
+}
