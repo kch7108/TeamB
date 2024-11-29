@@ -35,7 +35,7 @@ class Card {
     Random random = new Random();
 
     //N값을 70-100사이 설정.
-    int N_goal = 30;
+    int N_goal = ( 100 - 70 + 1 ) + 70;
 
     public Card() {
         String[] cardArray = {
